@@ -17,13 +17,11 @@ export function createBot({ token, database, lyricsClient, choiceTtlMinutes, log
   const bot = new Telegraf(token);
 
   bot.start((ctx) => ctx.reply(
-    'Send me a Telegram audio file with song title and performer metadata. '
-    + 'I will look up its lyrics. If several versions match, I will ask you to choose.'
+    "send me a song and i'll find the lyrics. if a few versions show up, you can pick the right one."
   ));
 
   bot.help((ctx) => ctx.reply(
-    'Send a song as an audio file (not a voice note). The file must include both Title and Performer tags. '
-    + 'Telegram displays these above the audio player.'
+    'just send the song as an audio file. make sure telegram shows the title and artist above the player.'
   ));
 
   bot.on(message('audio'), handleAudio);
@@ -37,8 +35,7 @@ export function createBot({ token, database, lyricsClient, choiceTtlMinutes, log
     if (!metadata) return;
     if (!metadata.hasEmbeddedTitle || !metadata.hasEmbeddedArtist) {
       await ctx.reply(
-        'I need both the song title and performer from the audio metadata. '
-        + 'Please edit the file tags and send it again.'
+        "can't read the title or artist on this one. fix the audio tags and send it again."
       );
       return;
     }
@@ -62,7 +59,7 @@ export function createBot({ token, database, lyricsClient, choiceTtlMinutes, log
       const candidates = rankCandidates(results, metadata.title, metadata.artist);
       if (!candidates.length) {
         await database.setLookupStatus(lookupId, 'not_found');
-        await ctx.reply(`I could not find lyrics for “${metadata.title}” by ${metadata.artist}.`);
+        await ctx.reply(`couldn't find lyrics for “${metadata.title}” by ${metadata.artist}.`);
         return;
       }
 
@@ -77,7 +74,7 @@ export function createBot({ token, database, lyricsClient, choiceTtlMinutes, log
         Markup.button.callback(candidateLabel(candidate), `lyrics:${lookupId}:${index}`)
       ]);
       await ctx.reply(
-        `I found several matches for “${metadata.title}” by ${metadata.artist}. Which one do you want?`,
+        `found a few versions of “${metadata.title}”. which one is it?`,
         Markup.inlineKeyboard(keyboard)
       );
     } catch (error) {
@@ -89,7 +86,7 @@ export function createBot({ token, database, lyricsClient, choiceTtlMinutes, log
       try {
         await database.setLookupStatus(lookupId, 'failed');
       } catch {}
-      await ctx.reply('Something went wrong while looking up the lyrics. Please try again later.');
+      await ctx.reply('something went wrong on my side. try again in a bit.');
     }
   }
 
@@ -98,20 +95,20 @@ export function createBot({ token, database, lyricsClient, choiceTtlMinutes, log
     try {
       const result = await database.selectCandidate(lookupId, Number(positionText), ctx.from.id);
       if (result.kind === 'missing') {
-        await ctx.answerCbQuery('This choice does not belong to you or no longer exists.', { show_alert: true });
+        await ctx.answerCbQuery("this one's not yours, or it's gone.", { show_alert: true });
         return;
       }
       if (result.kind === 'expired') {
-        await ctx.answerCbQuery('These choices have expired. Send the song again.', { show_alert: true });
+        await ctx.answerCbQuery('these choices expired. send the song again.', { show_alert: true });
         await ctx.editMessageReplyMarkup(undefined).catch(() => {});
         return;
       }
       if (result.kind === 'unavailable') {
-        await ctx.answerCbQuery('A choice was already made for this song.', { show_alert: true });
+        await ctx.answerCbQuery('you already picked one for this song.', { show_alert: true });
         await ctx.editMessageReplyMarkup(undefined).catch(() => {});
         return;
       }
-      await ctx.answerCbQuery('Loading lyrics…');
+      await ctx.answerCbQuery('got it');
       await ctx.editMessageReplyMarkup(undefined).catch(() => {});
       await sendLyrics(ctx, result.candidate);
     } catch (error) {
@@ -120,7 +117,7 @@ export function createBot({ token, database, lyricsClient, choiceTtlMinutes, log
         userId: ctx.from?.id,
         error: error instanceof Error ? error.message : String(error)
       });
-      await ctx.answerCbQuery('Could not load that choice. Please try again.', { show_alert: true });
+      await ctx.answerCbQuery("couldn't load that one. try again.", { show_alert: true });
     }
   });
 

@@ -42,7 +42,7 @@ export function candidateLabel(candidate) {
 export function formatLyrics(candidate) {
   const heading = `🎵 ${candidate.trackName}\n👤 ${candidate.artistName}`
     + (candidate.albumName ? `\n💿 ${candidate.albumName}` : '');
-  if (candidate.instrumental) return `${heading}\n\nThis track is marked as instrumental.`;
+  if (candidate.instrumental) return `${heading}\n\nlooks like this one's instrumental.`;
   const lyrics = candidate.plainLyrics || candidate.syncedLyrics;
-  return lyrics ? `${heading}\n\n${lyrics.trim()}` : `${heading}\n\nNo lyrics text is available for this version.`;
+  return lyrics ? `${heading}\n\n${lyrics.trim()}` : `${heading}\n\nno lyrics for this version.`;
 }
